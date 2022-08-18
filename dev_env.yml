@@ -1,0 +1,13 @@
+name: indxr
+dependencies:
+  - black
+  - ipykernel
+  - ipywidgets
+  - notebook
+  - pip
+  - pytest
+  - python=3.7
+  - pytorch
+  - tqdm
+  - pip:
+    - twine
