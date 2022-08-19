@@ -1,6 +1,7 @@
-import json
 import os
 from typing import Callable, Dict, List, Union
+
+import orjson
 
 from .handlers import csv_handler, jsonl_handler, txt_handler
 
@@ -19,20 +20,19 @@ class Indxr:
 
         # Infer file extension -------------------------------------------------
         if self.kind == "infer":
-            self.kind = os.path.splitext(path)[1][1:]
-            print(self.kind)
+            self.kind = os.path.splitext(self.path)[1][1:]
 
-        if self.kind not in {"raw", "jsonl", "csv", "tsv"}:
+        if self.kind not in {"txt", "jsonl", "csv", "tsv"}:
             raise NotImplementedError(
                 f"Specified `kind` not supported. {self.kind}"
             )
 
         # Init kwargs ----------------------------------------------------------
-        if not kwargs:
+        if not self.kwargs:
             self.kwargs = {}
 
         if "delimiter" not in self.kwargs:
-            self.kwargs["delimiter"] = "\t" if kind == "tsv" else ","
+            self.kwargs["delimiter"] = "\t" if self.kind == "tsv" else ","
 
         if "fieldnames" not in self.kwargs:
             self.kwargs["fieldnames"] = None
@@ -51,7 +51,7 @@ class Indxr:
         self.index_keys = list(self.index)
 
     def create_index(self) -> Dict:
-        if self.kind == "raw":
+        if self.kind == "txt":
             return txt_handler.index(self.path)
 
         elif self.kind == "jsonl":
@@ -65,7 +65,7 @@ class Indxr:
         raise NotImplementedError("Specified `kind` not supported.")
 
     def get(self, idx: Union[str, int]) -> Union[str, Dict]:
-        if self.kind == "raw":
+        if self.kind == "txt":
             x = txt_handler.get(path=self.path, index=self.index, idx=idx)
 
         elif self.kind == "jsonl":
@@ -84,7 +84,7 @@ class Indxr:
         return self.callback(x) if self.callback else x
 
     def mget(self, indices: List[str]) -> List:
-        if self.kind == "raw":
+        if self.kind == "txt":
             xs = txt_handler.mget(
                 path=self.path, index=self.index, indices=indices
             )
@@ -107,9 +107,9 @@ class Indxr:
         return [self.callback(x) for x in xs] if self.callback else xs
 
     def write(self, path: str):
-        with open(path, "w") as f:
+        with open(path, "wb") as f:
             f.write(
-                json.dumps(
+                orjson.dumps(
                     {
                         "path": self.path,
                         "kind": self.kind,
@@ -117,14 +117,14 @@ class Indxr:
                         "index": self.index,
                         "index_keys": self.index_keys,
                     },
-                    indent=4,
+                    option=orjson.OPT_INDENT_2,
                 )
             )
 
     @staticmethod
     def read(path: str):
-        with open(path, "r") as f:
-            x = json.loads(f.read())
+        with open(path, "rb") as f:
+            x = orjson.loads(f.read())
 
         indxr = Indxr(path=x["path"], kind=x["kind"], **x["kwargs"])
         indxr.index = x["index"]
