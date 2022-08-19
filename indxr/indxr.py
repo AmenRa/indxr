@@ -122,13 +122,14 @@ class Indxr:
             )
 
     @staticmethod
-    def read(path: str):
+    def read(path: str, callback:Callable=None):
         with open(path, "rb") as f:
             x = orjson.loads(f.read())
 
         indxr = Indxr(path=x["path"], kind=x["kind"], **x["kwargs"])
         indxr.index = x["index"]
         indxr.index_keys = x["index_keys"]
+        indxr.callback = callback
 
         return indxr
 
