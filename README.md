@@ -154,8 +154,8 @@ class CustomDataset(Dataset):
         pos_doc = self.documents.get(pos_doc_id)
         neg_doc = self.documents.get(neg_doc_id)
 
-        # The output must be batched and transformed to a
-        # meaningful tensor using a DataLoader and
+        # The outputs must be batched and transformed to
+        # meaningful tensors using a DataLoader and
         # a custom collator function
         return query["text"], pos_doc["text"], neg_doc["text"]
 
@@ -176,7 +176,13 @@ def collator_fn(batch):
 
 
 dataset = CustomDataset()
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+dataloader = DataLoader(
+    dataset,
+    collate_fn=collate_fn,
+    batch_size: 32,
+    shuffle: true,
+    num_workers: 4,
+)
 ```
 
 Each line of the `queries.jsonl` file is as follows:
@@ -184,8 +190,8 @@ Each line of the `queries.jsonl` file is as follows:
 {
   "q_id": "q321",
   "text": "lorem ipsum",
-  "pos_doc_ids": ["d2789822"...],
-  "neg_doc_ids": ["d3931445",...]
+  "pos_doc_ids": ["d2789822", "d2558037", "d2594098"],
+  "neg_doc_ids": ["d3931445", "d4652233", "d191393", "d3692918", "d3051731"]
 }
 ```
 
@@ -193,8 +199,7 @@ Each line of the `documents.jsonl` file is as follows:
 ```json
 {
   "doc_id": "d123",
-  "text": "Lorem ipsum dolor sit amet,
-           consectetuer adipiscing elit."
+  "text": "Lorem ipsum dolor sit amet, consectetuer adipiscing elit."
 }
 ```
 
