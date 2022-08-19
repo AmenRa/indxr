@@ -1,7 +1,10 @@
 from csv import reader
+from typing import Dict, List
+
+import numpy as np
 
 
-def csv_line_to_dict(line: str, fieldnames: list, delimiter: str) -> dict:
+def csv_line_to_dict(line: str, fieldnames: List, delimiter: str) -> Dict:
     return dict(
         zip(
             fieldnames,
@@ -10,18 +13,18 @@ def csv_line_to_dict(line: str, fieldnames: list, delimiter: str) -> dict:
     )
 
 
-def csv_line_to_list(line: str, delimiter: str) -> list:
+def csv_line_to_list(line: str, delimiter: str) -> List:
     return list(reader([line.decode("utf-8")], delimiter=delimiter))[0]
 
 
-def index_csv(
+def index(
     path: str,
     delimiter: str = ",",
-    fieldnames: list = None,
+    fieldnames: List = None,
     has_header: bool = True,
     return_dict: bool = True,
     key_id: str = "id",
-) -> dict:
+) -> Dict:
     assert (
         fieldnames or has_header
     ), "File must have header or fieldnames must be defined by user"
@@ -50,14 +53,14 @@ def index_csv(
     return fieldnames, index
 
 
-def get_csv_line(
+def get(
     path: str,
     index: dict,
     idx: str,
     delimiter: str = ",",
-    fieldnames: list = None,
+    fieldnames: List = None,
     return_dict: bool = True,
-):
+) -> Dict:
     with open(path, "rb") as file:
         position = index[idx]
         file.seek(position)
@@ -68,3 +71,32 @@ def get_csv_line(
         if return_dict
         else csv_line_to_list(line=line, delimiter=delimiter)
     )
+
+
+def mget(
+    path: str,
+    index: dict,
+    indices: str,
+    delimiter: str = ",",
+    fieldnames: List = None,
+    return_dict: bool = True,
+) -> List[Dict]:
+    positions = np.array([index[idx] for idx in indices])
+    sorting_indices = np.argsort(positions)
+
+    lines = [None] * len(positions)
+
+    with open(path, "rb") as file:
+        for i in sorting_indices:
+            file.seek(positions[i])
+            lines[i] = file.readline()
+
+    if return_dict:
+        return [
+            csv_line_to_dict(
+                line=line, fieldnames=fieldnames, delimiter=delimiter
+            )
+            for line in lines
+        ]
+
+    return [csv_line_to_list(line=line, delimiter=delimiter) for line in lines]

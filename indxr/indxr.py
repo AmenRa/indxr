@@ -1,60 +1,78 @@
 import json
-from typing import List, Union
+import os
+from typing import Callable, Dict, List, Union
 
-from .csv_handler import get_csv_line, index_csv
-from .jsonl_handler import get_jsonl_line, index_jsonl, mget_jsonl_line
-from .raw_handler import get_raw_line, index_raw
+from .handlers import csv_handler, jsonl_handler, txt_handler
 
 
 class Indxr:
-    def __init__(self, kind: str, path: str, **kwargs: dict):
-        if kind not in {"raw", "jsonl", "csv"}:
-            raise NotImplementedError("Specified `kind` not supported.")
-
+    def __init__(
+        self, path: str, kind="infer", callback: Callable = None, **kwargs: Dict
+    ):
+        # Init  ----------------------------------------------------------------
         self.kind = kind
         self.path = path
         self.kwargs = kwargs
+        self.callback = callback
+        self.index = None  # Dict : k -> file position
+        self.index_keys = None  # List of index keys
 
+        # Infer file extension -------------------------------------------------
+        if self.kind == "infer":
+            self.kind = os.path.splitext(path)[1][1:]
+            print(self.kind)
+
+        if self.kind not in {"raw", "jsonl", "csv", "tsv"}:
+            raise NotImplementedError(
+                f"Specified `kind` not supported. {self.kind}"
+            )
+
+        # Init kwargs ----------------------------------------------------------
         if not kwargs:
             self.kwargs = {}
 
         if "delimiter" not in self.kwargs:
-            self.kwargs["delimiter"] = ","
+            self.kwargs["delimiter"] = "\t" if kind == "tsv" else ","
+
         if "fieldnames" not in self.kwargs:
             self.kwargs["fieldnames"] = None
+
         if "has_header" not in self.kwargs:
             self.kwargs["has_header"] = True
+
         if "return_dict" not in self.kwargs:
             self.kwargs["return_dict"] = True
+
         if "key_id" not in self.kwargs:
             self.kwargs["key_id"] = "id"
 
+        # Create index ---------------------------------------------------------
         self.index = self.create_index()
         self.index_keys = list(self.index)
 
-    def create_index(self) -> dict:
+    def create_index(self) -> Dict:
         if self.kind == "raw":
-            return index_raw(self.path)
+            return txt_handler.index(self.path)
 
         elif self.kind == "jsonl":
-            return index_jsonl(self.path, self.kwargs["key_id"])
+            return jsonl_handler.index(self.path, self.kwargs["key_id"])
 
-        elif self.kind == "csv":
-            fieldnames, index = index_csv(self.path, **self.kwargs)
+        elif self.kind in {"csv", "tsv"}:
+            fieldnames, index = csv_handler.index(self.path, **self.kwargs)
             self.kwargs["fieldnames"] = fieldnames
             return index
 
         raise NotImplementedError("Specified `kind` not supported.")
 
-    def get(self, idx: Union[str, int]) -> Union[str, dict]:
+    def get(self, idx: Union[str, int]) -> Union[str, Dict]:
         if self.kind == "raw":
-            return get_raw_line(path=self.path, index=self.index, idx=idx)
+            x = txt_handler.get(path=self.path, index=self.index, idx=idx)
 
         elif self.kind == "jsonl":
-            return get_jsonl_line(path=self.path, index=self.index, idx=idx)
+            x = jsonl_handler.get(path=self.path, index=self.index, idx=idx)
 
-        elif self.kind == "csv":
-            return get_csv_line(
+        elif self.kind in {"csv", "tsv"}:
+            x = csv_handler.get(
                 path=self.path,
                 index=self.index,
                 idx=idx,
@@ -63,22 +81,41 @@ class Indxr:
                 return_dict=self.kwargs["return_dict"],
             )
 
-        raise NotImplementedError("Specified `kind` not supported.")
+        return self.callback(x) if self.callback else x
 
-    def mget(self, indices: List[str]):
-        return mget_jsonl_line(
-            path=self.path, index=self.index, indices=indices
-        )
+    def mget(self, indices: List[str]) -> List:
+        if self.kind == "raw":
+            xs = txt_handler.mget(
+                path=self.path, index=self.index, indices=indices
+            )
+
+        elif self.kind == "jsonl":
+            xs = jsonl_handler.mget(
+                path=self.path, index=self.index, indices=indices
+            )
+
+        elif self.kind in {"csv", "tsv"}:
+            xs = csv_handler.mget(
+                path=self.path,
+                index=self.index,
+                indices=indices,
+                delimiter=self.kwargs["delimiter"],
+                fieldnames=self.kwargs["fieldnames"],
+                return_dict=self.kwargs["return_dict"],
+            )
+
+        return [self.callback(x) for x in xs] if self.callback else xs
 
     def write(self, path: str):
         with open(path, "w") as f:
             f.write(
                 json.dumps(
                     {
-                        "kind": self.kind,
                         "path": self.path,
+                        "kind": self.kind,
                         "kwargs": self.kwargs,
                         "index": self.index,
+                        "index_keys": self.index_keys,
                     },
                     indent=4,
                 )
@@ -89,12 +126,13 @@ class Indxr:
         with open(path, "r") as f:
             x = json.loads(f.read())
 
-        indxr = Indxr(kind=x["kind"], path=x["path"], **x["kwargs"])
+        indxr = Indxr(path=x["path"], kind=x["kind"], **x["kwargs"])
         indxr.index = x["index"]
+        indxr.index_keys = x["index_keys"]
 
         return indxr
 
-    def __getitem__(self, idx: int) -> Union[str, dict]:
+    def __getitem__(self, idx: int) -> Union[str, Dict]:
         return self.get(self.index_keys[idx])
 
     def __len__(self) -> int:

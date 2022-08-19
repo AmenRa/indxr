@@ -1,8 +1,10 @@
+from typing import Dict, List
+
 import numpy as np
 import orjson
 
 
-def index_jsonl(path: str, key_id: str = "id") -> dict:
+def index(path: str, key_id: str = "id") -> Dict:
     index = {}  # Init index dictionary
 
     with open(path, "rb") as file:
@@ -16,7 +18,7 @@ def index_jsonl(path: str, key_id: str = "id") -> dict:
     return index
 
 
-def get_jsonl_line(path: str, index: dict, idx: str):
+def get(path: str, index: Dict, idx: str) -> Dict:
     with open(path, "rb") as file:
         position = index[idx]
         file.seek(position)
@@ -25,7 +27,7 @@ def get_jsonl_line(path: str, index: dict, idx: str):
     return orjson.loads(line)  # Convert line to Python Dictionary
 
 
-def mget_jsonl_line(path: str, index: dict, indices: str):
+def mget(path: str, index: Dict, indices: str) -> List[Dict]:
     positions = np.array([index[idx] for idx in indices])
     sorting_indices = np.argsort(positions)
 
