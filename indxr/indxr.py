@@ -122,7 +122,7 @@ class Indxr:
             )
 
     @staticmethod
-    def read(path: str, callback:Callable=None):
+    def read(path: str, callback: Callable = None):
         with open(path, "rb") as f:
             x = orjson.loads(f.read())
 
