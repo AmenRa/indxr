@@ -147,7 +147,7 @@ class CustomDataset(Dataset):
         query = self.queries[index]
 
         # Sampling -------------------------------------------------------------
-        neg_doc_id = random.choice(query["neg_doc_ids"])
+        pos_doc_id = random.choice(query["pos_doc_ids"])
         neg_doc_id = random.choice(query["neg_doc_ids"])
 
         # Get docs -------------------------------------------------------------
