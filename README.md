@@ -186,7 +186,7 @@ dataloader = DataLoader(
 )
 ```
 
-Each line of the `queries.jsonl` file is as follows:
+Each line of `queries.jsonl` is as follows:
 ```json
 {
   "q_id": "q321",
@@ -196,7 +196,7 @@ Each line of the `queries.jsonl` file is as follows:
 }
 ```
 
-Each line of the `documents.jsonl` file is as follows:
+Each line of `documents.jsonl` is as follows:
 ```json
 {
   "doc_id": "d123",
