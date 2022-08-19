@@ -46,7 +46,7 @@ pip install indxr
 ```python
 from indxr import Indxr
 
-index = indxr("sample.txt")
+index = Indxr("sample.txt")
 
 index[0]
 >>> # First line of sample.txt
@@ -64,17 +64,17 @@ index.mget(["2", "1"])
 ```python
 from indxr import Indxr
 
-index = indxr("sample.jsonl", key_id="id")  # key_id="id" is by default
+index = Indxr("sample.jsonl", key_id="id")  # key_id="id" is by default
 
 # Returns the JSON object at line 43 as Python Dictionary
-# reading only the line 43th line
+# Reads only the 43th line
 index[42]
 
-# Returns the JSON object with id="id_123" as Python Dictionary
-# reading only the line of "sample.jsonl" where it is located
+# Returns the JSON object with id="id_123" as Python Dictionary,
+# Reads only the line where the JSON object is located
 index.get("id_123")
 
-# Same as get but for multiple JSON objects
+# Same as `get` but for multiple JSON objects
 index.mget(["id_123", "id_321"])
 ```
 
@@ -84,7 +84,7 @@ index.mget(["id_123", "id_321"])
 ```python
 from indxr import Indxr
 
-index = indxr(
+index = Indxr(
   "sample.csv",
   delimiter=",",    # Default value. Automatically switched to `\t` for `.tsv` files.
   fieldnames=None,  # Default value. List of fieldnames. Overrides header, if any.
@@ -99,7 +99,7 @@ index[42]
 # Returns the line with id="id_123" as Python Dictionary
 index.get("id_123")
 
-# Same as get but for multiple lines
+# Same as `get` but for multiple lines
 index.mget(["id_123", "id_321"])
 ```
 
@@ -109,7 +109,7 @@ index.mget(["id_123", "id_321"])
 ```python
 from indxr import Indxr
 
-index = indxr("sample.txt", callback=lambda x: x.split())
+index = Indxr("sample.txt", callback=lambda x: x.split())
 
 index.get("0")
 >>> # First line of sample.txt split into a list
@@ -120,7 +120,7 @@ index.get("0")
 ```python
 from indxr import Indxr
 
-index = indxr("sample.txt", callback=lambda x: x.split())
+index = Indxr("sample.txt", callback=lambda x: x.split())
 
 index.write(path)  # Write index to disk
 
