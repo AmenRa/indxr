@@ -35,12 +35,12 @@ pip install indxr
 
 ## 💡 Usage
 
-- txt
-- jsonl
-- csv / tsv
-- callback
-- write / read
-- PyTorch Dataset example
+- [txt](https://github.com/AmenRa/indxr#txt)
+- [jsonl](https://github.com/AmenRa/indxr#jsonl)
+- [csv / tsv](https://github.com/AmenRa/indxr#csv--tsv--custom)
+- [callback](https://github.com/AmenRa/indxr#callback-works-with-every-file-type)
+- [write / read](https://github.com/AmenRa/indxr#write--read-index)
+- [PyTorch Dataset example](https://github.com/AmenRa/indxr#usage-example-with-pytorch-dataset)
 
 ### TXT
 ```python
@@ -143,14 +143,14 @@ class CustomDataset(Dataset):
       self.documents = Indxr("documents.jsonl")
 
     def __getitem__(self, index: int):
-        # Get query --------------------------------------
+        # Get query ------------------------------------------------------------
         query = self.queries[index]
 
-        # Sampling ---------------------------------------
+        # Sampling -------------------------------------------------------------
         neg_doc_id = random.choice(query["neg_doc_ids"])
         neg_doc_id = random.choice(query["neg_doc_ids"])
 
-        # Get docs ---------------------------------------
+        # Get docs -------------------------------------------------------------
         pos_doc = self.documents.get(pos_doc_id)
         neg_doc = self.documents.get(neg_doc_id)
 
@@ -164,24 +164,25 @@ class CustomDataset(Dataset):
 
 
 def collator_fn(batch):
+    # Extract data -------------------------------------------------------------
     queries = [x[0] for x in batch]
     pos_docs = [x[1] for x in batch]
     neg_docs = [x[2] for x in batch]
 
-    queries = tokenizer(queries)    # Returns PyTorch Tensors
-    pos_docs = tokenizer(pos_docs)  # Returns PyTorch Tensors
-    neg_docs = tokenizer(neg_docs)  # Returns PyTorch Tensors
+    # Texts tokenization -------------------------------------------------------
+    queries = tokenizer(queries)    # Returns PyTorch Tensor
+    pos_docs = tokenizer(pos_docs)  # Returns PyTorch Tensor
+    neg_docs = tokenizer(neg_docs)  # Returns PyTorch Tensor
 
     return queries, pos_docs, neg_docs
 
 
-dataset = CustomDataset()
 dataloader = DataLoader(
-    dataset,
+    dataset=CustomDataset(),
     collate_fn=collate_fn,
-    batch_size: 32,
-    shuffle: true,
-    num_workers: 4,
+    batch_size=32,
+    shuffle=True,
+    num_workers=4,
 )
 ```
 
