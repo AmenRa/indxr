@@ -8,7 +8,7 @@
       <img src="https://badges.aleen42.com/src/python.svg" />
   </a>
   <!-- Version -->
-  <a href="https://badge.fury.io/py/ranx"><img src="https://badge.fury.io/py/ranx.svg" alt="PyPI version" height="18"></a>
+  <a href="https://badge.fury.io/py/indxr"><img src="https://badge.fury.io/py/indxr.svg" alt="PyPI version" height="18"></a>
   <!-- Black -->
   <a href="https://github.com/psf/black" alt="Code style: black">
       <img src="https://img.shields.io/badge/code%20style-black-000000.svg" />
