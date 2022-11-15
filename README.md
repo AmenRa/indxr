@@ -79,7 +79,7 @@ index.mget(["id_123", "id_321"])
 ```
 
 
-### CSV / TSV / Custom
+### CSV / TSV / ...
 
 ```python
 from indxr import Indxr
@@ -103,6 +103,22 @@ index.get("id_123")
 index.mget(["id_123", "id_321"])
 ```
 
+### Custom
+```python
+from indxr import Indxr
+
+# The file must have multiple lines
+index = Indxr("sample.something")
+
+index[0]
+>>> # First line of sample.something in bytes
+
+index.get("0")
+>>> # First line of sample.something in bytes
+
+index.mget(["2", "1"])
+>>> # List containing the third and second lines of sample.something in bytes
+```
 
 ### Callback (works with every file-type)
 

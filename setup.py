@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="indxr",
-    version="0.1.0",
+    version="0.1.1",
     author="Elias Bassani",
     author_email="elias.bssn@gmail.com",
     description="indxr: A Python utility for indexing long files.",
@@ -27,6 +27,7 @@ setuptools.setup(
     keywords=[
         "text index",
         "file index",
+        "index",
         "indexer",
         "indexing",
         "information retrieval",

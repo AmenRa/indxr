@@ -3,7 +3,7 @@ from typing import Callable, Dict, List, Union
 
 import orjson
 
-from .handlers import csv_handler, jsonl_handler, txt_handler
+from .handlers import csv_handler, custom_handler, jsonl_handler, txt_handler
 
 
 class Indxr:
@@ -22,7 +22,7 @@ class Indxr:
         if self.kind == "infer":
             self.kind = os.path.splitext(self.path)[1][1:]
 
-        if self.kind not in {"txt", "jsonl", "csv", "tsv"}:
+        if self.kind not in {"txt", "jsonl", "csv", "tsv", "custom"}:
             raise NotImplementedError(
                 f"Specified `kind` not supported. {self.kind}"
             )
@@ -62,6 +62,9 @@ class Indxr:
             self.kwargs["fieldnames"] = fieldnames
             return index
 
+        elif self.kind == "custom":
+            return custom_handler.index(self.path)
+
         raise NotImplementedError("Specified `kind` not supported.")
 
     def get(self, idx: Union[str, int]) -> Union[str, Dict]:
@@ -80,6 +83,9 @@ class Indxr:
                 fieldnames=self.kwargs["fieldnames"],
                 return_dict=self.kwargs["return_dict"],
             )
+
+        elif self.kind == "custom":
+            x = custom_handler.get(path=self.path, index=self.index, idx=idx)
 
         return self.callback(x) if self.callback else x
 
@@ -102,6 +108,11 @@ class Indxr:
                 delimiter=self.kwargs["delimiter"],
                 fieldnames=self.kwargs["fieldnames"],
                 return_dict=self.kwargs["return_dict"],
+            )
+
+        if self.kind == "custom":
+            xs = custom_handler.mget(
+                path=self.path, index=self.index, indices=indices
             )
 
         return [self.callback(x) for x in xs] if self.callback else xs

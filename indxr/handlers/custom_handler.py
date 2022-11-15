@@ -16,16 +16,17 @@ def index(path: str) -> Dict:
     return index
 
 
-def get(path: str, index: Dict, idx: int) -> str:
+def get(path: str, index: Dict, idx: int) -> bytes:
+    print("ok")
     with open(path, "rb") as file:
         position = index[idx]
         file.seek(position)
         line = file.readline()
 
-    return line.decode("utf-8").strip()
+    return line.strip()
 
 
-def mget(path: str, index: Dict, indices: str) -> List[str]:
+def mget(path: str, index: Dict, indices: str) -> List[bytes]:
     positions = np.array([index[idx] for idx in indices])
     sorting_indices = np.argsort(positions)
 
@@ -36,4 +37,4 @@ def mget(path: str, index: Dict, indices: str) -> List[str]:
             file.seek(positions[i])
             lines[i] = file.readline()
 
-    return [line.decode("utf-8").strip() for line in lines]
+    return [line.strip() for line in lines]
