@@ -16,7 +16,7 @@ def index(path: str) -> Dict:
     return index
 
 
-def get(path: str, index: Dict, idx: int) -> str:
+def get(path: str, index: Dict, idx: str) -> str:
     with open(path, "rb") as file:
         position = index[idx]
         file.seek(position)

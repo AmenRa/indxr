@@ -1,9 +1,16 @@
 import os
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Tuple, Union
 
+import numpy as np
 import orjson
 
-from .handlers import csv_handler, custom_handler, jsonl_handler, txt_handler
+from .handlers import (
+    csv_handler,
+    custom_handler,
+    jsonl_handler,
+    numpy_handler,
+    txt_handler,
+)
 
 
 class Indxr:
@@ -22,7 +29,7 @@ class Indxr:
         if self.kind == "infer":
             self.kind = os.path.splitext(self.path)[1][1:]
 
-        if self.kind not in {"txt", "jsonl", "csv", "tsv", "custom"}:
+        if self.kind not in {"txt", "jsonl", "csv", "tsv", "custom", "dat"}:
             raise NotImplementedError(
                 f"Specified `kind` not supported. {self.kind}"
             )
@@ -62,12 +69,17 @@ class Indxr:
             self.kwargs["fieldnames"] = fieldnames
             return index
 
+        elif self.kind == "dat":
+            return numpy_handler.index(
+                self.kwargs["dtype"], self.kwargs["shape"]
+            )
+
         elif self.kind == "custom":
             return custom_handler.index(self.path)
 
         raise NotImplementedError("Specified `kind` not supported.")
 
-    def get(self, idx: Union[str, int]) -> Union[str, Dict]:
+    def get(self, idx: Union[str, int]) -> Union[str, Dict, np.ndarray]:
         if self.kind == "txt":
             x = txt_handler.get(path=self.path, index=self.index, idx=idx)
 
@@ -84,12 +96,20 @@ class Indxr:
                 return_dict=self.kwargs["return_dict"],
             )
 
+        elif self.kind == "dat":
+            x = numpy_handler.get(
+                path=self.path, index=self.index, idx=str(idx)
+            )
+
         elif self.kind == "custom":
             x = custom_handler.get(path=self.path, index=self.index, idx=idx)
 
+        else:
+            raise NotImplementedError()
+
         return self.callback(x) if self.callback else x
 
-    def mget(self, indices: List[str]) -> List:
+    def mget(self, indices: List[str]) -> List[Union[str, Dict, np.ndarray]]:
         if self.kind == "txt":
             xs = txt_handler.mget(
                 path=self.path, index=self.index, indices=indices
@@ -110,12 +130,40 @@ class Indxr:
                 return_dict=self.kwargs["return_dict"],
             )
 
-        if self.kind == "custom":
+        elif self.kind == "dat":
+            xs = numpy_handler.mget(
+                path=self.path,
+                index=self.index,
+                indices=[str(idx) for idx in indices],
+            )
+
+        elif self.kind == "custom":
             xs = custom_handler.mget(
                 path=self.path, index=self.index, indices=indices
             )
 
+        else:
+            raise NotImplementedError()
+
         return [self.callback(x) for x in xs] if self.callback else xs
+
+    def get_slice(self, start: int, stop: int) -> np.ndarray:
+        if self.kind == "dat":
+            return numpy_handler.get_slice(
+                path=self.path, index=self.index, start=start, stop=stop
+            )
+
+        else:
+            raise NotImplementedError()
+
+    def mget_slice(self, slices: List[Tuple[int]]) -> List[np.ndarray]:
+        if self.kind == "dat":
+            return numpy_handler.mget_slice(
+                path=self.path, index=self.index, slices=slices
+            )
+
+        else:
+            raise NotImplementedError()
 
     def write(self, path: str):
         with open(path, "wb") as f:
@@ -136,6 +184,9 @@ class Indxr:
     def read(path: str, callback: Callable = None):
         with open(path, "rb") as f:
             x = orjson.loads(f.read())
+
+        if "shape" in x["kwargs"]:
+            x["kwargs"]["shape"] = tuple(x["kwargs"]["shape"])
 
         indxr = Indxr(path=x["path"], kind=x["kind"], **x["kwargs"])
         indxr.index = x["index"]
