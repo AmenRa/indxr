@@ -8,6 +8,7 @@ from .handlers import (
     csv_handler,
     custom_handler,
     jsonl_handler,
+    multi_vector_handler,
     numpy_handler,
     txt_handler,
 )
@@ -70,9 +71,16 @@ class Indxr:
             return index
 
         elif self.kind == "dat":
-            return numpy_handler.index(
-                self.kwargs["dtype"], self.kwargs["shape"]
-            )
+            if "mapping" in self.kwargs:
+                return multi_vector_handler.index(
+                    self.kwargs["dtype"],
+                    self.kwargs["shape"],
+                    self.kwargs["mapping"],
+                )
+            else:
+                return numpy_handler.index(
+                    self.kwargs["dtype"], self.kwargs["shape"]
+                )
 
         elif self.kind == "custom":
             return custom_handler.index(self.path)
@@ -97,9 +105,17 @@ class Indxr:
             )
 
         elif self.kind == "dat":
-            x = numpy_handler.get(
-                path=self.path, index=self.index, idx=str(idx)
-            )
+            if "mapping" in self.kwargs:
+                x = multi_vector_handler.get(
+                    path=self.path,
+                    index=self.index,
+                    mapping=self.kwargs["mapping"],
+                    idx=str(idx),
+                )
+            else:
+                x = numpy_handler.get(
+                    path=self.path, index=self.index, idx=str(idx)
+                )
 
         elif self.kind == "custom":
             x = custom_handler.get(path=self.path, index=self.index, idx=idx)
@@ -112,7 +128,10 @@ class Indxr:
     def mget(self, indices: List[str]) -> List[Union[str, Dict, np.ndarray]]:
         if self.kind == "txt":
             xs = txt_handler.mget(
-                path=self.path, index=self.index, indices=indices
+                path=self.path,
+                index=self.index,
+                mapping=self.kwargs["mapping"],
+                indices=indices,
             )
 
         elif self.kind == "jsonl":
@@ -131,11 +150,19 @@ class Indxr:
             )
 
         elif self.kind == "dat":
-            xs = numpy_handler.mget(
-                path=self.path,
-                index=self.index,
-                indices=[str(idx) for idx in indices],
-            )
+            if "mapping" in self.kwargs:
+                xs = multi_vector_handler.mget(
+                    path=self.path,
+                    index=self.index,
+                    mapping=self.kwargs["mapping"],
+                    indices=[str(idx) for idx in indices],
+                )
+            else:
+                xs = numpy_handler.mget(
+                    path=self.path,
+                    index=self.index,
+                    indices=[str(idx) for idx in indices],
+                )
 
         elif self.kind == "custom":
             xs = custom_handler.mget(
