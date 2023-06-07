@@ -16,11 +16,11 @@ from .handlers import (
 
 class Indxr:
     def __init__(
-        self, path: str, kind="infer", callback: Callable = None, **kwargs: Dict
+        self, path: str, kind: str = "infer", callback: Callable = None, **kwargs: Dict
     ):
         # Init  ----------------------------------------------------------------
         self.kind = kind
-        self.path = path
+        self.path = str(path)
         self.kwargs = kwargs
         self.callback = callback
         self.index = None  # Dict : k -> file position
@@ -31,9 +31,7 @@ class Indxr:
             self.kind = os.path.splitext(self.path)[1][1:]
 
         if self.kind not in {"txt", "jsonl", "csv", "tsv", "custom", "dat"}:
-            raise NotImplementedError(
-                f"Specified `kind` not supported. {self.kind}"
-            )
+            raise NotImplementedError(f"Specified `kind` not supported. {self.kind}")
 
         # Init kwargs ----------------------------------------------------------
         if not self.kwargs:
@@ -78,9 +76,7 @@ class Indxr:
                     self.kwargs["mapping"],
                 )
             else:
-                return numpy_handler.index(
-                    self.kwargs["dtype"], self.kwargs["shape"]
-                )
+                return numpy_handler.index(self.kwargs["dtype"], self.kwargs["shape"])
 
         elif self.kind == "custom":
             return custom_handler.index(self.path)
@@ -113,9 +109,7 @@ class Indxr:
                     idx=str(idx),
                 )
             else:
-                x = numpy_handler.get(
-                    path=self.path, index=self.index, idx=str(idx)
-                )
+                x = numpy_handler.get(path=self.path, index=self.index, idx=str(idx))
 
         elif self.kind == "custom":
             x = custom_handler.get(path=self.path, index=self.index, idx=idx)
@@ -127,17 +121,10 @@ class Indxr:
 
     def mget(self, indices: List[str]) -> List[Union[str, Dict, np.ndarray]]:
         if self.kind == "txt":
-            xs = txt_handler.mget(
-                path=self.path,
-                index=self.index,
-                mapping=self.kwargs["mapping"],
-                indices=indices,
-            )
+            xs = txt_handler.mget(path=self.path, index=self.index, indices=indices)
 
         elif self.kind == "jsonl":
-            xs = jsonl_handler.mget(
-                path=self.path, index=self.index, indices=indices
-            )
+            xs = jsonl_handler.mget(path=self.path, index=self.index, indices=indices)
 
         elif self.kind in {"csv", "tsv"}:
             xs = csv_handler.mget(
@@ -165,9 +152,7 @@ class Indxr:
                 )
 
         elif self.kind == "custom":
-            xs = custom_handler.mget(
-                path=self.path, index=self.index, indices=indices
-            )
+            xs = custom_handler.mget(path=self.path, index=self.index, indices=indices)
 
         else:
             raise NotImplementedError()

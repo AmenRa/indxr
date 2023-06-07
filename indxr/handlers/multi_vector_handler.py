@@ -26,7 +26,5 @@ def get(path: str, index: Dict, mapping: Dict, idx: str) -> np.ndarray:
     )
 
 
-def mget(
-    path: str, index: Dict, mapping: Dict, indices: List[str]
-) -> np.ndarray:
+def mget(path: str, index: Dict, mapping: Dict, indices: List[str]) -> np.ndarray:
     return [get(path, index, mapping, idx) for idx in indices]

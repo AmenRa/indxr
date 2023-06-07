@@ -93,9 +93,7 @@ def mget(
 
     if return_dict:
         return [
-            csv_line_to_dict(
-                line=line, fieldnames=fieldnames, delimiter=delimiter
-            )
+            csv_line_to_dict(line=line, fieldnames=fieldnames, delimiter=delimiter)
             for line in lines
         ]
 
