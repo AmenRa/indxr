@@ -16,7 +16,7 @@ def filename():
 @pytest.fixture
 def data(filename):
     data = np.arange(120, dtype=np.float32)
-    data.resize((30, 40))
+    data = np.resize(data, (30, 40))
     fp = np.memmap(filename, dtype="float32", mode="w+", shape=(30, 40))
     fp[:] = data[:]
     fp.flush()
@@ -43,9 +43,7 @@ def mapping():
 
 # TESTS ========================================================================
 def test_numpy_get(filename, data, mapping):
-    index = Indxr(
-        path=filename, dtype="float32", shape=(30, 40), mapping=mapping
-    )
+    index = Indxr(path=filename, dtype="float32", shape=(30, 40), mapping=mapping)
 
     assert np.array_equal(index.get("doc_1"), data[0:6])
     assert np.array_equal(index.get("doc_2"), data[6:16])
@@ -53,9 +51,7 @@ def test_numpy_get(filename, data, mapping):
 
 
 def test_numpy_mget(filename, data, mapping):
-    index = Indxr(
-        path=filename, dtype="float32", shape=(30, 40), mapping=mapping
-    )
+    index = Indxr(path=filename, dtype="float32", shape=(30, 40), mapping=mapping)
 
     out = index.mget(["doc_1", "doc_2", "doc_3"])
 
@@ -71,9 +67,7 @@ def test_numpy_mget(filename, data, mapping):
 
 
 def test_write_read(filename, data, mapping):
-    index_1 = Indxr(
-        path=filename, dtype="float32", shape=(30, 40), mapping=mapping
-    )
+    index_1 = Indxr(path=filename, dtype="float32", shape=(30, 40), mapping=mapping)
     index_1.write("tests/test_index.json")
     index_2 = Indxr.read("tests/test_index.json")
 

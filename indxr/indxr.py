@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
@@ -16,8 +17,22 @@ from .handlers import (
 
 class Indxr:
     def __init__(
-        self, path: str, kind: str = "infer", callback: Callable = None, **kwargs: Dict
+        self,
+        path: Union[str, Path],
+        kind: str = None,
+        callback: Callable = None,
+        **kwargs: Dict,
     ):
+        """_summary_
+
+        Args:
+            path (Union[str, Path]): The path where the file to index is located.
+            kind (str, optional): Kind of file to index, must be either "txt", "jsonl", "csv", "tsv", "custom", "dat". If None, it will be automatically inferred from the filename extension.
+            callback (Callable, optional): A function to apply to an item when read. Defaults to None.
+
+        Returns:
+            Indxr: Indxr object.
+        """
         # Init  ----------------------------------------------------------------
         self.kind = kind
         self.path = str(path)
@@ -25,9 +40,11 @@ class Indxr:
         self.callback = callback
         self.index = None  # Dict : k -> file position
         self.index_keys = None  # List of index keys
+        self.iteration_index = 0  # Index for iteration
+        self.file = open(path, "rb")  # File pointer
 
         # Infer file extension -------------------------------------------------
-        if self.kind == "infer":
+        if self.kind is None:
             self.kind = os.path.splitext(self.path)[1][1:]
 
         if self.kind not in {"txt", "jsonl", "csv", "tsv", "custom", "dat"}:
@@ -83,18 +100,26 @@ class Indxr:
 
         raise NotImplementedError("Specified `kind` not supported.")
 
-    def get(self, idx: Union[str, int]) -> Union[str, Dict, np.ndarray]:
+    def get(self, key: Union[str, int]) -> Union[str, Dict, np.ndarray]:
+        """Get an item by key.
+
+        Args:
+            key (Union[str, int]): Key of the item to get.
+
+        Returns:
+            Union[str, Dict, np.ndarray]: Item.
+        """
         if self.kind == "txt":
-            x = txt_handler.get(path=self.path, index=self.index, idx=idx)
+            x = txt_handler.get(file=self.file, index=self.index, idx=key)
 
         elif self.kind == "jsonl":
-            x = jsonl_handler.get(path=self.path, index=self.index, idx=idx)
+            x = jsonl_handler.get(file=self.file, index=self.index, idx=key)
 
         elif self.kind in {"csv", "tsv"}:
             x = csv_handler.get(
-                path=self.path,
+                file=self.file,
                 index=self.index,
-                idx=idx,
+                idx=key,
                 delimiter=self.kwargs["delimiter"],
                 fieldnames=self.kwargs["fieldnames"],
                 return_dict=self.kwargs["return_dict"],
@@ -106,31 +131,41 @@ class Indxr:
                     path=self.path,
                     index=self.index,
                     mapping=self.kwargs["mapping"],
-                    idx=str(idx),
+                    idx=str(key),
                 )
             else:
-                x = numpy_handler.get(path=self.path, index=self.index, idx=str(idx))
+                x = numpy_handler.get(path=self.path, index=self.index, idx=str(key))
 
         elif self.kind == "custom":
-            x = custom_handler.get(path=self.path, index=self.index, idx=idx)
+            x = custom_handler.get(file=self.file, index=self.index, idx=key)
 
         else:
             raise NotImplementedError()
 
         return self.callback(x) if self.callback else x
 
-    def mget(self, indices: List[str]) -> List[Union[str, Dict, np.ndarray]]:
+    def mget(
+        self, keys: Union[List[int], List[str]]
+    ) -> List[Union[str, Dict, np.ndarray]]:
+        """Get multiple item by key.
+
+        Args:
+            keys (Union[List[int], List[str]]): Keys of the items to get.
+
+        Returns:
+            List[Union[str, Dict, np.ndarray]]: items.
+        """
         if self.kind == "txt":
-            xs = txt_handler.mget(path=self.path, index=self.index, indices=indices)
+            xs = txt_handler.mget(file=self.file, index=self.index, indices=keys)
 
         elif self.kind == "jsonl":
-            xs = jsonl_handler.mget(path=self.path, index=self.index, indices=indices)
+            xs = jsonl_handler.mget(file=self.file, index=self.index, indices=keys)
 
         elif self.kind in {"csv", "tsv"}:
             xs = csv_handler.mget(
-                path=self.path,
+                file=self.file,
                 index=self.index,
-                indices=indices,
+                indices=keys,
                 delimiter=self.kwargs["delimiter"],
                 fieldnames=self.kwargs["fieldnames"],
                 return_dict=self.kwargs["return_dict"],
@@ -142,17 +177,17 @@ class Indxr:
                     path=self.path,
                     index=self.index,
                     mapping=self.kwargs["mapping"],
-                    indices=[str(idx) for idx in indices],
+                    indices=[str(idx) for idx in keys],
                 )
             else:
                 xs = numpy_handler.mget(
                     path=self.path,
                     index=self.index,
-                    indices=[str(idx) for idx in indices],
+                    indices=[str(idx) for idx in keys],
                 )
 
         elif self.kind == "custom":
-            xs = custom_handler.mget(path=self.path, index=self.index, indices=indices)
+            xs = custom_handler.mget(file=self.file, index=self.index, indices=keys)
 
         else:
             raise NotImplementedError()
@@ -177,8 +212,13 @@ class Indxr:
         else:
             raise NotImplementedError()
 
-    def write(self, path: str):
-        with open(path, "wb") as f:
+    def write(self, path: Union[str, Path]):
+        """Write index to file.
+
+        Args:
+            path (Union[str, Path]): Where to write the index.
+        """
+        with open(str(path), "wb") as f:
             f.write(
                 orjson.dumps(
                     {
@@ -193,8 +233,17 @@ class Indxr:
             )
 
     @staticmethod
-    def read(path: str, callback: Callable = None):
-        with open(path, "rb") as f:
+    def read(path: Union[str, Path], callback: Callable = None):
+        """Read index form file.
+
+        Args:
+            path (Union[str, Path]): Where to write the index.
+            callback (Callable, optional): A function to apply to an item when read. Defaults to None.
+
+        Returns:
+            Indxr: Indxr object.
+        """
+        with open(str(path), "rb") as f:
             x = orjson.loads(f.read())
 
         if "shape" in x["kwargs"]:
@@ -207,8 +256,49 @@ class Indxr:
 
         return indxr
 
-    def __getitem__(self, idx: int) -> Union[str, Dict]:
-        return self.get(self.index_keys[idx])
+    def generate_batches(self, batch_size: int, shuffle: bool = False):
+        """Batch generator.
+
+        Args:
+            batch_size (int): Batch size.
+            shuffle (bool, optional): Whether to shuffle the data. Defaults to False.
+
+        Yields:
+            List[Union[str, Dict, np.ndarray]]: Batch of items.
+        """
+        indices = np.arange(len(self))
+
+        if shuffle:
+            np.random.shuffle(indices)
+
+        for i in range(0, len(self), batch_size):
+            keys = [self.index_keys[key] for key in indices[i : i + batch_size]]
+            yield self.mget(keys)
+
+    def __getitem__(self, key: Union[int, slice]) -> Union[str, Dict]:
+        # Handle single-item access
+        if not isinstance(key, slice):
+            return self.get(self.index_keys[key])
+
+        # Handle slicing
+        start = key.start if key.start is not None else 0
+        stop = key.stop if key.stop is not None else len(self)
+        step = key.step if key.step is not None else 1
+        keys = [self.index_keys[i] for i in range(start, stop, step)]
+        return self.mget(keys)
 
     def __len__(self) -> int:
         return len(self.index_keys)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.iteration_index >= len(self):
+            raise StopIteration
+        result = self.get(self.index_keys[self.iteration_index])
+        self.iteration_index += 1
+        return result
+
+    def __del__(self):
+        self.file.close()

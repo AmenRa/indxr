@@ -20,9 +20,11 @@
 
 ## ⚡️ Introduction
 
-[indxr](https://github.com/AmenRa/indxr) is a Python utility for indexing long files that allows you to read specific lines dynamically, avoiding hogging your RAM.
+[indxr](https://github.com/AmenRa/indxr) is a Python utility for indexing long files that allows you to quickly read specific lines dynamically, avoiding hogging your RAM.
 
-[indxr](https://github.com/AmenRa/indxr) can be particularly useful for managing large datasets split among multiple files and loading data dynamically and with a low memory footprint.
+For example, given a 10M lines JOSNl file and a MacBook Pro from 2018, reading any specific line takes less than 10 µs, reading 1k non-contiguous lines takes less than 10 ms, reading 1k contiguous lines takes less than 2 ms, iterating over the entire file by reading batches of 32 lines takes less than 20 s (64 µs per batch). In other words, [indxr](https://github.com/AmenRa/indxr) allows you to use your disk as a RAM extension without noticeable slowdowns, especially with SSDs and NVMEs.
+
+[indxr](https://github.com/AmenRa/indxr) can be particularly useful for dynamically loading data from large datasets with a low memory footprint and without slowing downstream tasks, such as data processing and Neural Networks training.
 
 For an overview, follow the [Usage](#-usage) section.
 
@@ -48,14 +50,17 @@ from indxr import Indxr
 
 index = Indxr("sample.txt")
 
+# First line of sample.txt
 index[0]
->>> # First line of sample.txt
 
+# List containing the second and third lines of sample.txt
+index[1:3]
+
+# First line of sample.txt
 index.get("0")
->>> # First line of sample.txt
 
+# List containing the third and second lines of sample.txt
 index.mget(["2", "1"])
->>> # List containing the third and second lines of sample.txt
 ```
 
 
@@ -66,11 +71,15 @@ from indxr import Indxr
 
 index = Indxr("sample.jsonl", key_id="id")  # key_id="id" is by default
 
-# Returns the JSON object at line 43 as Python Dictionary
+# JSON object at line 43 as Python Dictionary
 # Reads only the 43th line
 index[42]
 
-# Returns the JSON object with id="id_123" as Python Dictionary,
+# JSON objects at line 43, 44, and 45 as Python Dictionaries
+# Reads only the 43th, 44th, and 45th lines
+index[42:46]
+
+# JSON object with id="id_123" as Python Dictionary,
 # Reads only the line where the JSON object is located
 index.get("id_123")
 
@@ -93,10 +102,13 @@ index = Indxr(
   key_id="id",      # Default value. Same as for JSONl. Ignored if return_dict is `False`.
 )
 
-# Returns line 43 as Python Dictionary
+# Line 43 as Python Dictionary
 index[42]
 
-# Returns the line with id="id_123" as Python Dictionary
+# Lines 43, 44, and 45 as Python Dictionaries
+index[42:46]
+
+# Line with id="id_123" as Python Dictionary
 index.get("id_123")
 
 # Same as `get` but for multiple lines
@@ -110,14 +122,17 @@ from indxr import Indxr
 # The file must have multiple lines
 index = Indxr("sample.something")
 
+# First line of sample.something in bytes
 index[0]
->>> # First line of sample.something in bytes
 
+# List containing the second and third lines of sample.something in bytes
+index[1:3]
+
+# First line of sample.something in bytes
 index.get("0")
->>> # First line of sample.something in bytes
 
+# List containing the third and second lines of sample.something in bytes
 index.mget(["2", "1"])
->>> # List containing the third and second lines of sample.something in bytes
 ```
 
 ### Callback (works with every file-type)
@@ -146,6 +161,8 @@ index = Indxr.read(path, callback=lambda x: x.split())
 
 
 ### Usage example with PyTorch Dataset
+
+In this example, we want to build a PyTorch Dataset that returns a query and two documents, one positive and one negative, for training a Neural retriever. The data is stored in two files, `queries.jsonl` and `documents.jsonl`. The first file contains queries and the second file contains documents. Each query has a list of associated positive and negative documents. Using `Indxr` we can avoid loading the entire dataset into memory and we can load data dynamically, without slowing down the training process.
 
 ```python
 import random

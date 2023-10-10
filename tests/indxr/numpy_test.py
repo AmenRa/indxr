@@ -16,7 +16,7 @@ def filename():
 @pytest.fixture
 def data(filename):
     data = np.arange(120, dtype=np.float32)
-    data.resize((30, 40))
+    data = np.resize(data, (30, 40))
     fp = np.memmap(filename, dtype="float32", mode="w+", shape=(30, 40))
     fp[:] = data[:]
     fp.flush()
@@ -62,12 +62,8 @@ def test_numpy_slice(filename, data):
 def test_numpy_mslice(filename, data):
     index = Indxr(path=filename, dtype="float32", shape=(30, 40))
 
-    assert np.array_equal(
-        index.mget_slice([(10, 15), (18, 27)])[0], data[10:15]
-    )
-    assert np.array_equal(
-        index.mget_slice([(10, 15), (18, 27)])[1], data[18:27]
-    )
+    assert np.array_equal(index.mget_slice([(10, 15), (18, 27)])[0], data[10:15])
+    assert np.array_equal(index.mget_slice([(10, 15), (18, 27)])[1], data[18:27])
 
 
 def test_write_read(filename):

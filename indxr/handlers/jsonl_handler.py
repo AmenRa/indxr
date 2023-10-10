@@ -1,3 +1,4 @@
+from io import BufferedReader
 from typing import Dict, List
 
 import numpy as np
@@ -18,24 +19,22 @@ def index(path: str, key_id: str = "id") -> Dict:
     return index
 
 
-def get(path: str, index: Dict, idx: str) -> Dict:
-    with open(path, "rb") as file:
-        position = index[idx]
-        file.seek(position)
-        line = file.readline()
+def get(file: BufferedReader, index: Dict, idx: str) -> Dict:
+    position = index[idx]
+    file.seek(position)
+    line = file.readline()
 
     return orjson.loads(line)  # Convert line to Python Dictionary
 
 
-def mget(path: str, index: Dict, indices: str) -> List[Dict]:
+def mget(file: BufferedReader, index: Dict, indices: str) -> List[Dict]:
     positions = np.array([index[idx] for idx in indices])
     sorting_indices = np.argsort(positions)
 
     lines = [None] * len(positions)
 
-    with open(path, "rb") as file:
-        for i in sorting_indices:
-            file.seek(positions[i])
-            lines[i] = file.readline()
+    for i in sorting_indices:
+        file.seek(positions[i])
+        lines[i] = file.readline()
 
     return [orjson.loads(line) for line in lines]

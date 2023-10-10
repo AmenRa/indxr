@@ -1,4 +1,5 @@
 from csv import reader
+from io import BufferedReader
 from typing import Dict, List
 
 import numpy as np
@@ -54,17 +55,16 @@ def index(
 
 
 def get(
-    path: str,
+    file: BufferedReader,
     index: dict,
     idx: str,
     delimiter: str = ",",
     fieldnames: List = None,
     return_dict: bool = True,
 ) -> Dict:
-    with open(path, "rb") as file:
-        position = index[idx]
-        file.seek(position)
-        line = file.readline()
+    position = index[idx]
+    file.seek(position)
+    line = file.readline()
 
     return (
         csv_line_to_dict(line=line, fieldnames=fieldnames, delimiter=delimiter)
@@ -74,7 +74,7 @@ def get(
 
 
 def mget(
-    path: str,
+    file: BufferedReader,
     index: dict,
     indices: str,
     delimiter: str = ",",
@@ -86,10 +86,9 @@ def mget(
 
     lines = [None] * len(positions)
 
-    with open(path, "rb") as file:
-        for i in sorting_indices:
-            file.seek(positions[i])
-            lines[i] = file.readline()
+    for i in sorting_indices:
+        file.seek(positions[i])
+        lines[i] = file.readline()
 
     if return_dict:
         return [
