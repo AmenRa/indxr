@@ -22,7 +22,7 @@
 
 [indxr](https://github.com/AmenRa/indxr) is a Python utility for indexing long files that allows you to quickly read specific lines dynamically, avoiding hogging your RAM.
 
-For example, given a 10M lines JOSNl file and a MacBook Pro from 2018, reading any specific line takes less than 10 µs, reading 1k non-contiguous lines takes less than 10 ms, reading 1k contiguous lines takes less than 2 ms, iterating over the entire file by reading batches of 32 lines takes less than 20 s (64 µs per batch). In other words, [indxr](https://github.com/AmenRa/indxr) allows you to use your disk as a RAM extension without noticeable slowdowns, especially with SSDs and NVMEs.
+For example, given a 10M lines [JOSNl](https://jsonlines.org) file and a [MacBook Pro from 2018](https://support.apple.com/kb/SP776), reading any specific line takes less than 10 µs, reading 1k non-contiguous lines takes less than 10 ms, reading 1k contiguous lines takes less than 2 ms, iterating over the entire file by reading batches of 32 lines takes less than 20 s (64 µs per batch). In other words, [indxr](https://github.com/AmenRa/indxr) allows you to use your disk as a RAM extension without noticeable slowdowns, especially with SSDs and NVMEs.
 
 [indxr](https://github.com/AmenRa/indxr) can be particularly useful for dynamically loading data from large datasets with a low memory footprint and without slowing downstream tasks, such as data processing and Neural Networks training.
 
