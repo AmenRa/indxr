@@ -215,7 +215,8 @@ dataloader = DataLoader(
     collate_fn=collate_fn,
     batch_size=32,
     shuffle=True,
-    num_workers=4,
+    num_workers=1,
+    prefatch_factor=4,
 )
 ```
 
