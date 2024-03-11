@@ -20,9 +20,16 @@
 
 ## ⚡️ Introduction
 
-[indxr](https://github.com/AmenRa/indxr) is a Python utility for indexing files that allows you to quickly read specific lines dynamically, avoiding hogging your RAM.
 
-For example, given a 10M lines [JOSNl](https://jsonlines.org) file and a [MacBook Pro from 2018](https://support.apple.com/kb/SP776), reading any specific line takes less than 10 µs, reading 1k non-contiguous lines takes less than 10 ms, reading 1k contiguous lines takes less than 2 ms, iterating over the entire file by reading batches of 32 lines takes less than 20 s (64 µs per batch). In other words, [indxr](https://github.com/AmenRa/indxr) allows you to use your disk as a RAM extension without noticeable slowdowns, especially with SSDs and NVMEs.
+
+> [!IMPORTANT]  
+> "It is definitely a tool that is worth knowing about." - [ECIR 2024](https://www.ecir2024.org) Reviewer
+
+[indxr](https://github.com/AmenRa/indxr) [ˈɪnˌdɛksər] is a [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) utility that allows to dynamically access specific file lines without loading the entire file into memory. 
+In other words, [indxr](https://github.com/AmenRa/indxr) allows you to use your disk as a RAM extension without noticeable slowdowns, especially with SSDs and NVMEs.
+[indxr](https://github.com/AmenRa/indxr) will be featured in [ECIR 2024](https://www.ecir2024.org).
+
+For example, given a 10M lines [JOSNl](https://jsonlines.org) file and a [MacBook Pro from 2018](https://support.apple.com/kb/SP776), reading any specific line takes less than 10 µs, reading 1k non-contiguous lines takes less than 10 ms, reading 1k contiguous lines takes less than 2 ms, iterating over the entire file by reading batches of 32 lines takes less than 20 s (64 µs per batch).
 
 [indxr](https://github.com/AmenRa/indxr) can be particularly useful for dynamically loading data from large datasets with a low memory footprint and without slowing downstream tasks, such as data processing and Neural Networks training.
 
@@ -71,12 +78,12 @@ from indxr import Indxr
 
 index = Indxr("sample.jsonl", key_id="id")  # key_id="id" is by default
 
-# JSON object at line 43 as Python Dictionary
-# Reads only the 43th line
+# JSON object at line 42 as Python Dictionary
+# Reads only the 42nd line
 index[42]
 
-# JSON objects at line 43, 44, and 45 as Python Dictionaries
-# Reads only the 43th, 44th, and 45th lines
+# JSON objects at line 42, 43, and 44 as Python Dictionaries
+# Reads only the 42nd, 43th, and 44th lines
 index[42:46]
 
 # JSON object with id="id_123" as Python Dictionary,
@@ -102,10 +109,10 @@ index = Indxr(
   key_id="id",      # Default value. Same as for JSONl. Ignored if return_dict is `False`.
 )
 
-# Line 43 as Python Dictionary
+# Line 42 as Python Dictionary
 index[42]
 
-# Lines 43, 44, and 45 as Python Dictionaries
+# Lines 42, 43, and 44 as Python Dictionaries
 index[42:46]
 
 # Line with id="id_123" as Python Dictionary
