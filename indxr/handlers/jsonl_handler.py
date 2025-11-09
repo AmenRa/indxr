@@ -1,11 +1,10 @@
 from io import BufferedReader
-from typing import Dict, List
 
 import numpy as np
 import orjson
 
 
-def index(path: str, key_id: str = "id") -> Dict:
+def index(path: str, key_id: str = "id") -> dict:
     index = {}  # Init index dictionary
 
     with open(path, "rb") as file:
@@ -19,15 +18,15 @@ def index(path: str, key_id: str = "id") -> Dict:
     return index
 
 
-def get(file: BufferedReader, index: Dict, idx: str) -> Dict:
+def get(file: BufferedReader, index: dict, idx: str) -> dict:
     position = index[idx]
     file.seek(position)
     line = file.readline()
 
-    return orjson.loads(line)  # Convert line to Python Dictionary
+    return orjson.loads(line)  # Convert line to Python dictionary
 
 
-def mget(file: BufferedReader, index: Dict, indices: str) -> List[Dict]:
+def mget(file: BufferedReader, index: dict, indices: str) -> list[dict]:
     positions = np.array([index[idx] for idx in indices])
     sorting_indices = np.argsort(positions)
 

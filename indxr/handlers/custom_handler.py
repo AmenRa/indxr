@@ -1,10 +1,9 @@
 from io import BufferedReader
-from typing import Dict, List
 
 import numpy as np
 
 
-def index(path: str) -> Dict:
+def index(path: str) -> dict:
     index = {}  # Init index dictionary
 
     with open(path, "rb") as file:
@@ -17,7 +16,7 @@ def index(path: str) -> Dict:
     return index
 
 
-def get(file: BufferedReader, index: Dict, idx: int) -> bytes:
+def get(file: BufferedReader, index: dict, idx: int) -> bytes:
     position = index[idx]
     file.seek(position)
     line = file.readline()
@@ -25,7 +24,7 @@ def get(file: BufferedReader, index: Dict, idx: int) -> bytes:
     return line.strip()
 
 
-def mget(file: BufferedReader, index: Dict, indices: str) -> List[bytes]:
+def mget(file: BufferedReader, index: dict, indices: str) -> list[bytes]:
     positions = np.array([index[idx] for idx in indices])
     sorting_indices = np.argsort(positions)
 

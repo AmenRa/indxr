@@ -1,11 +1,10 @@
 from csv import reader
 from io import BufferedReader
-from typing import Dict, List
 
 import numpy as np
 
 
-def csv_line_to_dict(line: str, fieldnames: List, delimiter: str) -> Dict:
+def csv_line_to_dict(line: str, fieldnames: list, delimiter: str) -> dict:
     return dict(
         zip(
             fieldnames,
@@ -14,18 +13,18 @@ def csv_line_to_dict(line: str, fieldnames: List, delimiter: str) -> Dict:
     )
 
 
-def csv_line_to_list(line: str, delimiter: str) -> List:
+def csv_line_to_list(line: str, delimiter: str) -> list:
     return list(reader([line.decode("utf-8")], delimiter=delimiter))[0]
 
 
 def index(
     path: str,
     delimiter: str = ",",
-    fieldnames: List = None,
+    fieldnames: list = None,
     has_header: bool = True,
     return_dict: bool = True,
     key_id: str = "id",
-) -> Dict:
+) -> dict:
     assert (
         fieldnames or has_header
     ), "File must have header or fieldnames must be defined by user"
@@ -59,9 +58,9 @@ def get(
     index: dict,
     idx: str,
     delimiter: str = ",",
-    fieldnames: List = None,
+    fieldnames: list = None,
     return_dict: bool = True,
-) -> Dict:
+) -> dict:
     position = index[idx]
     file.seek(position)
     line = file.readline()
@@ -78,9 +77,9 @@ def mget(
     index: dict,
     indices: str,
     delimiter: str = ",",
-    fieldnames: List = None,
+    fieldnames: list = None,
     return_dict: bool = True,
-) -> List[Dict]:
+) -> list[dict]:
     positions = np.array([index[idx] for idx in indices])
     sorting_indices = np.argsort(positions)
 

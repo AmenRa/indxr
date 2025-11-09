@@ -43,6 +43,18 @@ def test_numpy_get(filename, data):
     assert np.array_equal(index.get(1), data[1])
     assert np.array_equal(index.get(2), data[2])
 
+    # With ids
+    ids = [f"id_{i}" for i in range(30)]
+    index = Indxr(path=filename, dtype="float32", shape=(30, 40), ids=ids)
+
+    assert np.array_equal(index.get("id_0"), data[0])
+    assert np.array_equal(index.get("id_1"), data[1])
+    assert np.array_equal(index.get("id_2"), data[2])
+
+    assert np.array_equal(index[0], data[0])
+    assert np.array_equal(index[1], data[1])
+    assert np.array_equal(index[2], data[2])
+
 
 def test_numpy_mget(filename, data):
     index = Indxr(path=filename, dtype="float32", shape=(30, 40))
@@ -50,6 +62,15 @@ def test_numpy_mget(filename, data):
     assert np.array_equal(index.mget(["0", "1", "2"]), data[:3])
     assert np.array_equal(
         index.mget(["2", "0", "1"]), np.asarray([data[2], data[0], data[1]])
+    )
+
+    # With ids
+    ids = [f"id_{i}" for i in range(30)]
+    index = Indxr(path=filename, dtype="float32", shape=(30, 40), ids=ids)
+
+    assert np.array_equal(index.mget(["id_0", "id_1", "id_2"]), data[:3])
+    assert np.array_equal(
+        index.mget(["id_2", "id_0", "id_1"]), np.asarray([data[2], data[0], data[1]])
     )
 
 
@@ -78,5 +99,22 @@ def test_write_read(filename):
     assert index_2.index_keys == index_1.index_keys
     assert index_2.kwargs["dtype"] == index_1.kwargs["dtype"]
     assert index_2.kwargs["shape"] == index_1.kwargs["shape"]
+
+    os.remove("tests/test_index.json")
+
+    # With ids
+    ids = [f"id_{i}" for i in range(30)]
+    index_1 = Indxr(path=filename, dtype="float32", shape=(30, 40), ids=ids)
+    index_1.write("tests/test_index.json")
+    index_2 = Indxr.read("tests/test_index.json")
+
+    assert index_2.kind == index_1.kind
+    assert index_2.path == index_1.path
+    assert index_2.kwargs == index_1.kwargs
+    assert index_2.index == index_1.index
+    assert index_2.index_keys == index_1.index_keys
+    assert index_2.kwargs["dtype"] == index_1.kwargs["dtype"]
+    assert index_2.kwargs["shape"] == index_1.kwargs["shape"]
+    assert index_2.kwargs["ids"] == index_1.kwargs["ids"]
 
     os.remove("tests/test_index.json")

@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 import orjson
@@ -18,15 +17,15 @@ from .handlers import (
 class Indxr:
     def __init__(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         kind: str = None,
-        callback: Callable = None,
-        **kwargs: Dict,
+        callback: callable = None,
+        **kwargs: dict,
     ):
-        """_summary_
+        """Instantiate Indxr object.
 
         Args:
-            path (Union[str, Path]): The path where the file to index is located.
+            path (str | Path): The path where the file to index is located.
             kind (str, optional): Kind of file to index, must be either "txt", "jsonl", "csv", "tsv", "custom", "dat". If None, it will be automatically inferred from the filename extension.
             callback (Callable, optional): A function to apply to an item when read. Defaults to None.
 
@@ -41,7 +40,6 @@ class Indxr:
         self.index = None  # Dict : k -> file position
         self.index_keys = None  # List of index keys
         self.iteration_index = 0  # Index for iteration
-        self.file = open(path, "rb")  # File pointer
 
         # Infer file extension -------------------------------------------------
         if self.kind is None:
@@ -69,11 +67,14 @@ class Indxr:
         if "key_id" not in self.kwargs:
             self.kwargs["key_id"] = "id"
 
+        if "ids" not in self.kwargs:
+            self.kwargs["ids"] = None
+
         # Create index ---------------------------------------------------------
         self.index = self.create_index()
         self.index_keys = list(self.index)
 
-    def create_index(self) -> Dict:
+    def create_index(self) -> dict:
         if self.kind == "txt":
             return txt_handler.index(self.path)
 
@@ -81,116 +82,129 @@ class Indxr:
             return jsonl_handler.index(self.path, self.kwargs["key_id"])
 
         elif self.kind in {"csv", "tsv"}:
-            fieldnames, index = csv_handler.index(self.path, **self.kwargs)
+            fieldnames, index = csv_handler.index(
+                self.path,
+                delimiter=self.kwargs["delimiter"],
+                fieldnames=self.kwargs["fieldnames"],
+                has_header=self.kwargs["has_header"],
+                return_dict=self.kwargs["return_dict"],
+                key_id=self.kwargs["key_id"],
+            )
             self.kwargs["fieldnames"] = fieldnames
             return index
 
         elif self.kind == "dat":
             if "mapping" in self.kwargs:
                 return multi_vector_handler.index(
-                    self.kwargs["dtype"],
-                    self.kwargs["shape"],
-                    self.kwargs["mapping"],
+                    dtype=self.kwargs["dtype"],
+                    shape=self.kwargs["shape"],
+                    mapping=self.kwargs["mapping"],
                 )
             else:
-                return numpy_handler.index(self.kwargs["dtype"], self.kwargs["shape"])
+                return numpy_handler.index(
+                    dtype=self.kwargs["dtype"],
+                    shape=self.kwargs["shape"],
+                    ids=self.kwargs["ids"],
+                )
 
         elif self.kind == "custom":
             return custom_handler.index(self.path)
 
         raise NotImplementedError("Specified `kind` not supported.")
 
-    def get(self, key: Union[str, int]) -> Union[str, Dict, np.ndarray]:
+    def get(self, key: str | int) -> str | dict | np.ndarray:
         """Get an item by key.
 
         Args:
-            key (Union[str, int]): Key of the item to get.
+            key (str | int): Key of the item to get.
 
         Returns:
-            Union[str, Dict, np.ndarray]: Item.
+            str | Dict | np.ndarray: Item.
         """
-        if self.kind == "txt":
-            x = txt_handler.get(file=self.file, index=self.index, idx=key)
+        with open(self.path, "rb") as file:
+            if self.kind == "txt":
+                x = txt_handler.get(file=file, index=self.index, idx=key)
 
-        elif self.kind == "jsonl":
-            x = jsonl_handler.get(file=self.file, index=self.index, idx=key)
+            elif self.kind == "jsonl":
+                x = jsonl_handler.get(file=file, index=self.index, idx=key)
 
-        elif self.kind in {"csv", "tsv"}:
-            x = csv_handler.get(
-                file=self.file,
-                index=self.index,
-                idx=key,
-                delimiter=self.kwargs["delimiter"],
-                fieldnames=self.kwargs["fieldnames"],
-                return_dict=self.kwargs["return_dict"],
-            )
-
-        elif self.kind == "dat":
-            if "mapping" in self.kwargs:
-                x = multi_vector_handler.get(
-                    path=self.path,
+            elif self.kind in {"csv", "tsv"}:
+                x = csv_handler.get(
+                    file=file,
                     index=self.index,
-                    mapping=self.kwargs["mapping"],
-                    idx=str(key),
+                    idx=key,
+                    delimiter=self.kwargs["delimiter"],
+                    fieldnames=self.kwargs["fieldnames"],
+                    return_dict=self.kwargs["return_dict"],
                 )
+
+            elif self.kind == "dat":
+                if "mapping" in self.kwargs:
+                    x = multi_vector_handler.get(
+                        path=self.path,
+                        index=self.index,
+                        mapping=self.kwargs["mapping"],
+                        idx=str(key),
+                    )
+                else:
+                    x = numpy_handler.get(
+                        path=self.path, index=self.index, idx=str(key)
+                    )
+
+            elif self.kind == "custom":
+                x = custom_handler.get(file=file, index=self.index, idx=key)
+
             else:
-                x = numpy_handler.get(path=self.path, index=self.index, idx=str(key))
-
-        elif self.kind == "custom":
-            x = custom_handler.get(file=self.file, index=self.index, idx=key)
-
-        else:
-            raise NotImplementedError()
+                raise NotImplementedError()
 
         return self.callback(x) if self.callback else x
 
-    def mget(
-        self, keys: Union[List[int], List[str]]
-    ) -> List[Union[str, Dict, np.ndarray]]:
+    def mget(self, keys: list[int] | list[str]) -> list[str | dict | np.ndarray]:
         """Get multiple item by key.
 
         Args:
-            keys (Union[List[int], List[str]]): Keys of the items to get.
+            keys (List[int] | List[str]): Keys of the items to get.
 
         Returns:
-            List[Union[str, Dict, np.ndarray]]: items.
+            List[str | Dict | np.ndarray]: items.
         """
-        if self.kind == "txt":
-            xs = txt_handler.mget(file=self.file, index=self.index, indices=keys)
+        with open(self.path, "rb") as file:
+            if self.kind == "txt":
+                xs = txt_handler.mget(file=file, index=self.index, indices=keys)
 
-        elif self.kind == "jsonl":
-            xs = jsonl_handler.mget(file=self.file, index=self.index, indices=keys)
+            elif self.kind == "jsonl":
+                xs = jsonl_handler.mget(file=file, index=self.index, indices=keys)
 
-        elif self.kind in {"csv", "tsv"}:
-            xs = csv_handler.mget(
-                file=self.file,
-                index=self.index,
-                indices=keys,
-                delimiter=self.kwargs["delimiter"],
-                fieldnames=self.kwargs["fieldnames"],
-                return_dict=self.kwargs["return_dict"],
-            )
-
-        elif self.kind == "dat":
-            if "mapping" in self.kwargs:
-                xs = multi_vector_handler.mget(
-                    path=self.path,
+            elif self.kind in {"csv", "tsv"}:
+                xs = csv_handler.mget(
+                    file=file,
                     index=self.index,
-                    mapping=self.kwargs["mapping"],
-                    indices=[str(idx) for idx in keys],
+                    indices=keys,
+                    delimiter=self.kwargs["delimiter"],
+                    fieldnames=self.kwargs["fieldnames"],
+                    return_dict=self.kwargs["return_dict"],
                 )
+
+            elif self.kind == "dat":
+                if "mapping" in self.kwargs:
+                    xs = multi_vector_handler.mget(
+                        path=file,
+                        index=self.index,
+                        mapping=self.kwargs["mapping"],
+                        indices=[str(idx) for idx in keys],
+                    )
+                else:
+                    xs = numpy_handler.mget(
+                        path=file,
+                        index=self.index,
+                        indices=[str(idx) for idx in keys],
+                    )
+
+            elif self.kind == "custom":
+                xs = custom_handler.mget(file=file, index=self.index, indices=keys)
+
             else:
-                xs = numpy_handler.mget(
-                    path=self.path,
-                    index=self.index,
-                    indices=[str(idx) for idx in keys],
-                )
-
-        elif self.kind == "custom":
-            xs = custom_handler.mget(file=self.file, index=self.index, indices=keys)
-
-        else:
-            raise NotImplementedError()
+                raise NotImplementedError()
 
         return [self.callback(x) for x in xs] if self.callback else xs
 
@@ -203,7 +217,7 @@ class Indxr:
         else:
             raise NotImplementedError()
 
-    def mget_slice(self, slices: List[Tuple[int]]) -> List[np.ndarray]:
+    def mget_slice(self, slices: list[tuple[int]]) -> list[np.ndarray]:
         if self.kind == "dat":
             return numpy_handler.mget_slice(
                 path=self.path, index=self.index, slices=slices
@@ -212,11 +226,11 @@ class Indxr:
         else:
             raise NotImplementedError()
 
-    def write(self, path: Union[str, Path]):
+    def write(self, path: str | Path):
         """Write index to file.
 
         Args:
-            path (Union[str, Path]): Where to write the index.
+            path (str | Path): Where to write the index.
         """
         with open(str(path), "wb") as f:
             f.write(
@@ -233,11 +247,11 @@ class Indxr:
             )
 
     @staticmethod
-    def read(path: Union[str, Path], callback: Callable = None):
+    def read(path: str | Path, callback: callable = None):
         """Read index form file.
 
         Args:
-            path (Union[str, Path]): Where to write the index.
+            path (str | Path): Where to write the index.
             callback (Callable, optional): A function to apply to an item when read. Defaults to None.
 
         Returns:
@@ -264,7 +278,7 @@ class Indxr:
             shuffle (bool, optional): Whether to shuffle the data. Defaults to False.
 
         Yields:
-            List[Union[str, Dict, np.ndarray]]: Batch of items.
+            List[str | Dict | np.ndarray]: Batch of items.
         """
         indices = np.arange(len(self))
 
@@ -275,7 +289,7 @@ class Indxr:
             keys = [self.index_keys[key] for key in indices[i : i + batch_size]]
             yield self.mget(keys)
 
-    def __getitem__(self, key: Union[int, slice]) -> Union[str, Dict]:
+    def __getitem__(self, key: int | slice) -> str | dict | np.ndarray:
         # Handle single-item access
         if not isinstance(key, slice):
             return self.get(self.index_keys[key])
@@ -299,6 +313,3 @@ class Indxr:
         result = self.get(self.index_keys[self.iteration_index])
         self.iteration_index += 1
         return result
-
-    def __del__(self):
-        self.file.close()
